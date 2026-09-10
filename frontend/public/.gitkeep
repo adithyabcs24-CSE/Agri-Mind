@@ -1,0 +1,1 @@
+# Keep public directory tracked in git so Docker build does not fail

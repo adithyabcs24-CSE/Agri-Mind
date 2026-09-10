@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  db:
+    image: timescale/timescaledb:latest-pg15
+    container_name: agrimind-db
+    environment:
+      POSTGRES_USER: agrimind
+      POSTGRES_PASSWORD: agrimind123
+      POSTGRES_DB: agrimind_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - agrimind-network
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: agrimind-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - agrimind-network
+    restart: always
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agrimind-backend
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://agrimind:agrimind123@db:5432/agrimind_db
+      - DATABASE_URL_SYNC=postgresql://agrimind:agrimind123@db:5432/agrimind_db
+      - REDIS_URL=redis://redis:6379/0
+      - CORS_ORIGINS=["http://localhost:3000"]
+      - ENVIRONMENT=production
+      - DEBUG=False
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - agrimind-network
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: agrimind-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - agrimind-network
+    restart: always
+
+  db-viewer:
+    image: adminer:latest
+    container_name: agrimind-db-viewer
+    ports:
+      - "8080:8080"
+    networks:
+      - agrimind-network
+    volumes:
+      - ./adminer.css:/var/www/html/adminer.css
+    restart: always
+
+volumes:
+  pgdata:
+
+networks:
+  agrimind-network:
+    driver: bridge

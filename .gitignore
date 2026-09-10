@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Next.js & Frontend Builds
+.next/
+*/.next/
+out/
+build/
+dist/
+.cache/
+
+# Python & Backend
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+.pytest_cache/
+backend/uploads/
+*.pt
+*.h5
+*.pkl
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+*.env
+!*.env.example
+
+# OS & Editor
+.DS_Store
+*/.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Nested duplicate folder
+Agri-Mind/

@@ -1,0 +1,7 @@
+# AgriMind AI - ML Models Directory
+# Run `python train_all.py` to generate model files:
+# - pest_predictor.joblib
+# - water_predictor.joblib
+# - price_predictor.joblib
+# - harvest_predictor.joblib
+# - metadata.json
