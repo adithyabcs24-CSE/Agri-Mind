@@ -50,7 +50,7 @@ class ApiClient {
   }
 
   login(email: string, password: string) {
-    return this.request<{ access_token: string }>('/auth/login', {
+    return this.request<{ access_token: string; refresh_token?: string; expires_in?: number; user?: any }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -71,13 +71,14 @@ class ApiClient {
   }
 
   verifyOtp(email: string, otp: string, name: string, password: string, phone?: string) {
-    return this.request<{ access_token: string; refresh_token: string; expires_in: number }>('/auth/verify-otp', {
+    return this.request<{ access_token: string; refresh_token: string; expires_in: number; user?: any }>('/auth/verify-otp', {
       method: 'POST',
       body: JSON.stringify({ email, otp, name, password, phone }),
     });
   }
 
   getMe() { return this.request<any>('/auth/me'); }
+  updateMe(data: any) { return this.request<any>('/auth/me', { method: 'PUT', body: JSON.stringify(data) }); }
   getFarms() { return this.request<any[]>('/farms/'); }
   getFarm(farmId: string) { return this.request<any>(`/farms/${farmId}`); }
   createFarm(data: any) { return this.request<any>('/farms/', { method: 'POST', body: JSON.stringify(data) }); }

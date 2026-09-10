@@ -93,11 +93,40 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),
         expires_in=86400,
+        user=user,
     )
 
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+class UserUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    language: Optional[str] = None
+    preferences: Optional[dict] = None
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_me(
+    data: UserUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if data.full_name is not None:
+        current_user.full_name = data.full_name
+    if data.phone is not None:
+        current_user.phone = data.phone
+    if data.language is not None:
+        current_user.language = data.language
+    if data.preferences is not None:
+        current_user.preferences = data.preferences
+
+    db.add(current_user)
+    await db.commit()
+    await db.refresh(current_user)
     return current_user
 
 
@@ -268,4 +297,5 @@ async def verify_otp_and_register(data: VerifyOtpRequest, db: AsyncSession = Dep
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),
         expires_in=86400,
+        user=user,
     )

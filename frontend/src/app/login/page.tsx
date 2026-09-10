@@ -238,11 +238,20 @@ export default function LoginPage() {
 
       // Fetch user info from database
       let user: AuthUser;
-      try {
-        const me = await api.getMe();
-        user = { id: me.id || '1', name: me.full_name || 'Farmer', email: me.email || loginEmail, role: me.role || 'farmer' };
-      } catch {
-        user = { id: '1', name: 'Farmer', email: loginEmail, role: 'farmer' };
+      if (res.user) {
+        user = {
+          id: String(res.user.id || '1'),
+          name: res.user.full_name || 'Farmer',
+          email: res.user.email || loginEmail,
+          role: (res.user.role || 'farmer') as any,
+        };
+      } else {
+        try {
+          const me = await api.getMe();
+          user = { id: String(me.id || '1'), name: me.full_name || 'Farmer', email: me.email || loginEmail, role: (me.role || 'farmer') as any };
+        } catch {
+          user = { id: '1', name: loginEmail.split('@')[0], email: loginEmail, role: 'farmer' };
+        }
       }
       auth.setAuth(res.access_token, user);
       toast.success('Connected to Neon Realtime Database! 🌿', { id: tid });
@@ -336,15 +345,26 @@ export default function LoginPage() {
       api.setToken(res.access_token);
       // Fetch user profile
       let user: AuthUser;
-      try {
-        const me = await api.getMe();
-        user = { id: me.id || Date.now().toString(), name: me.full_name || pendingUser.name, email: me.email || pendingUser.email, role: me.role || 'farmer' };
-      } catch {
-        user = { id: Date.now().toString(), name: pendingUser.name, email: pendingUser.email, role: 'farmer' };
+      if (res.user) {
+        user = {
+          id: String(res.user.id || Date.now().toString()),
+          name: res.user.full_name || pendingUser.name,
+          email: res.user.email || pendingUser.email,
+          role: (res.user.role || 'farmer') as any,
+        };
+      } else {
+        try {
+          const me = await api.getMe();
+          user = { id: String(me.id || Date.now().toString()), name: me.full_name || pendingUser.name, email: me.email || pendingUser.email, role: (me.role || 'farmer') as any };
+        } catch {
+          user = { id: Date.now().toString(), name: pendingUser.name, email: pendingUser.email, role: 'farmer' };
+        }
       }
       auth.setAuth(res.access_token, user);
       toast.success('✅ Phone & Account verified! Welcome to AgriMind AI 🌿');
-      router.replace('/dashboard');
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 300);
     } catch (err: any) {
       setOtpShake(true);
       setTimeout(() => setOtpShake(false), 600);

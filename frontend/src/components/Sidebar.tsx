@@ -40,6 +40,7 @@ export default function Sidebar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const handleLogout = () => {
     auth.logout();
@@ -50,6 +51,7 @@ export default function Sidebar() {
 
   useEffect(() => {
     setMounted(true);
+    setCurrentUser(auth.getUser());
     const saved = localStorage.getItem('sidebar-collapsed');
     if (saved) setIsCollapsed(JSON.parse(saved));
   }, []);
@@ -110,6 +112,44 @@ export default function Sidebar() {
 
       {/* Sidebar Footer */}
       <div className="sidebar-footer">
+        {/* Logged in User Pill */}
+        {!isCollapsed && currentUser && (
+          <div style={{
+            padding: '8px 10px',
+            marginBottom: '6px',
+            background: 'rgba(22, 163, 74, 0.08)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid rgba(22, 163, 74, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}>
+            <div style={{
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 10,
+              fontWeight: 800,
+              flexShrink: 0,
+            }}>
+              {(currentUser.name || 'F').slice(0, 2).toUpperCase()}
+            </div>
+            <div style={{ overflow: 'hidden', lineHeight: 1.2 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 }}>
+                {currentUser.name || 'Farmer'}
+              </p>
+              <p style={{ fontSize: 9, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '2px 0 0' }}>
+                {currentUser.role || 'farmer'}
+              </p>
+            </div>
+          </div>
+        )}
+
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           className="sidebar-footer-btn"
