@@ -4,11 +4,22 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Leaf, Lock, Mail, ArrowRight, Loader2, Sprout, Brain,
-  BarChart3, User, Eye, EyeOff, ShieldCheck, RefreshCw, ChevronLeft, Phone,
+  BarChart3, User, Eye, EyeOff, ShieldCheck, RefreshCw, ChevronLeft, Phone, Zap,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
 import { auth, AuthUser } from '@/lib/auth';
+import {
+  DEMO_FARM,
+  DEMO_FIELDS,
+  DEMO_CYCLE,
+  DEMO_SENSORS,
+  DEMO_WEATHER,
+  DEMO_IRRIGATION,
+  DEMO_ALERTS,
+  DEMO_PEST,
+  DEMO_PROFIT,
+} from '@/lib/demoData';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type View = 'login' | 'signup' | 'otp';
@@ -128,11 +139,12 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.search.includes('expired=1')) {
-      toast.error('Previous session expired after database reconnect. Please sign in.', { duration: 6000 });
+      window.history.replaceState({}, document.title, window.location.pathname);
+      toast.error('Session expired. Please sign in or use Demo Mode.', { duration: 4000 });
     } else if (auth.isAuthenticated()) {
-      router.replace('/dashboard');
+      window.location.href = '/dashboard';
     }
-  }, [router]);
+  }, []);
 
   // Resend countdown
   useEffect(() => {
@@ -152,6 +164,43 @@ export default function LoginPage() {
     }, 280);
   }, [animating]);
 
+  // ── Instant Demo Login ──
+  const loginWithDemo = () => {
+    setLoginLoading(true);
+    const tid = toast.loading('Launching AgriMind AI Interactive Demo...');
+    const demoToken = 'demo-token-agrimind-' + Date.now();
+    const demoUser: AuthUser = {
+      id: 'demo-001',
+      name: 'Rajesh Kumar (Demo Farmer)',
+      email: 'demo@agrimind.ai',
+      role: 'farmer',
+    };
+
+    api.setToken(demoToken);
+    auth.setAuth(demoToken, demoUser);
+
+    try {
+      localStorage.setItem('cached_farms', JSON.stringify([DEMO_FARM]));
+      localStorage.setItem(`cached_fields_${DEMO_FARM.id}`, JSON.stringify(DEMO_FIELDS));
+      localStorage.setItem('selectedFarmId', DEMO_FARM.id);
+      localStorage.setItem('selectedFieldId', DEMO_FIELDS[0].id);
+      localStorage.setItem(`cached_active_cycle_${DEMO_FIELDS[0].id}`, JSON.stringify(DEMO_CYCLE));
+      localStorage.setItem(`cached_sensors_${DEMO_FIELDS[0].id}`, JSON.stringify(DEMO_SENSORS));
+      localStorage.setItem(`cached_weather_${DEMO_FIELDS[0].id}`, JSON.stringify(DEMO_WEATHER));
+      localStorage.setItem(`cached_irrigation_${DEMO_FIELDS[0].id}`, JSON.stringify(DEMO_IRRIGATION));
+      localStorage.setItem('cached_alerts', JSON.stringify(DEMO_ALERTS));
+      localStorage.setItem(`cached_pest_${DEMO_CYCLE.id}`, JSON.stringify(DEMO_PEST));
+      localStorage.setItem(`cached_profit_${DEMO_CYCLE.id}`, JSON.stringify(DEMO_PROFIT));
+    } catch (err) {
+      console.warn('LocalStorage demo write notice:', err);
+    }
+
+    toast.success('Welcome to AgriMind AI Demo! 🌿', { id: tid });
+    setTimeout(() => {
+      window.location.href = '/dashboard';
+    }, 350);
+  };
+
   // ── Login Submit ──
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,26 +209,16 @@ export default function LoginPage() {
       return;
     }
 
-    // ── Demo Login Bypass (works without backend) ──
-    if (loginEmail === 'demo@agrimind.ai' && loginPassword === 'demo1234') {
-      setLoginLoading(true);
-      const tid = toast.loading('Signing in with demo account...');
-      await new Promise(resolve => setTimeout(resolve, 800)); // simulate loading
-      const demoToken = 'demo-token-agrimind-' + Date.now();
-      const demoUser: AuthUser = {
-        id: 'demo-001',
-        name: 'Demo Farmer',
-        email: 'demo@agrimind.ai',
-        role: 'farmer',
-      };
-      api.setToken(demoToken);
-      auth.setAuth(demoToken, demoUser);
-      localStorage.removeItem('cached_farms');
-      localStorage.removeItem('selectedFarmId');
-      localStorage.removeItem('selectedFieldId');
-      toast.success('Welcome to AgriMind AI Demo! 🌿', { id: tid });
-      router.replace('/dashboard');
-      setLoginLoading(false);
+    const cleanEmail = loginEmail.trim().toLowerCase();
+    const isDemo =
+      cleanEmail === 'demo@agrimind.ai' ||
+      cleanEmail.includes('demo') ||
+      cleanEmail === 'farmer@agrimind.ai' ||
+      loginPassword === 'demo1234' ||
+      loginPassword === 'Farmer@123';
+
+    if (isDemo) {
+      loginWithDemo();
       return;
     }
 
@@ -207,9 +246,11 @@ export default function LoginPage() {
       }
       auth.setAuth(res.access_token, user);
       toast.success('Connected to Neon Realtime Database! 🌿', { id: tid });
-      router.replace('/dashboard');
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 300);
     } catch (err: any) {
-      toast.error(err.message || 'Invalid email or password', { id: tid });
+      toast.error(err.message || 'Invalid email or password. Use One-Click Demo below!', { id: tid });
     } finally {
       setLoginLoading(false);
     }
@@ -398,16 +439,34 @@ export default function LoginPage() {
               </button>
 
               <div className="login-demo-box">
+                <button
+                  type="button"
+                  id="btn-one-click-demo"
+                  className="login-submit-btn"
+                  style={{
+                    background: 'linear-gradient(135deg, #15803d 0%, #16a34a 50%, #22c55e 100%)',
+                    marginBottom: '10px',
+                    padding: '11px 18px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    boxShadow: '0 4px 14px rgba(34, 197, 94, 0.35)',
+                  }}
+                  onClick={loginWithDemo}
+                  disabled={loginLoading}
+                >
+                  <Zap style={{ width: 16, height: 16, fill: '#fef08a', color: '#fef08a' }} />
+                  Instant Demo Access (1-Click)
+                </button>
                 <p className="login-demo-text">
-                  Demo: <span className="login-demo-cred">demo@agrimind.ai</span> / <span className="login-demo-cred">demo1234</span>
+                  Demo Account: <span className="login-demo-cred">demo@agrimind.ai</span> / <span className="login-demo-cred">demo1234</span>
                 </p>
                 <button
                   type="button"
                   className="auth-switch-btn"
-                  style={{ marginTop: '8px', fontSize: '11px', padding: '6px 14px', background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.25)', color: '#4ade80' }}
+                  style={{ marginTop: '6px', fontSize: '11px', padding: '4px 10px', background: 'transparent', border: 'none', color: '#86efac', textDecoration: 'underline' }}
                   onClick={() => { setLoginEmail('demo@agrimind.ai'); setLoginPassword('demo1234'); }}
                 >
-                  ⚡ Fill Demo Credentials
+                  Or fill form credentials
                 </button>
               </div>
             </div>

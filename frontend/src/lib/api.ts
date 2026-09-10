@@ -32,7 +32,8 @@ class ApiClient {
 
     const res = await fetch(`${API_URL}${path}`, { ...options, headers });
     if (!res.ok) {
-      if (res.status === 401 && typeof window !== 'undefined' && !path.includes('/login') && !path.includes('/verify-otp')) {
+      const isDemo = token?.startsWith('demo-') || token === 'demo-mode';
+      if (res.status === 401 && typeof window !== 'undefined' && !isDemo && !path.includes('/login') && !path.includes('/verify-otp')) {
         this.clearToken();
         localStorage.removeItem('agrimind_user');
         localStorage.removeItem('cached_farms');

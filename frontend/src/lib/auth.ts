@@ -41,6 +41,17 @@ class AuthStore {
     return !!this.getToken();
   }
 
+  /** True if currently logged in as a demo user */
+  isDemo(): boolean {
+    const token = this.getToken();
+    const user = this.getUser();
+    return !!(
+      token?.startsWith('demo-token-') ||
+      token === 'demo-mode' ||
+      user?.email?.toLowerCase().includes('demo')
+    );
+  }
+
   /** Clear all auth data — call on logout */
   logout() {
     if (typeof window === 'undefined') return;

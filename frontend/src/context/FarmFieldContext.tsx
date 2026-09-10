@@ -3,6 +3,16 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { auth } from '@/lib/auth';
+import {
+  DEMO_FARM,
+  DEMO_FIELDS,
+  DEMO_CYCLE,
+  DEMO_SENSORS,
+  DEMO_WEATHER,
+  DEMO_IRRIGATION,
+  DEMO_ALERTS,
+} from '@/lib/demoData';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -28,13 +38,17 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('agrimind_user');
-      localStorage.removeItem('cached_farms');
-      localStorage.removeItem('selectedFarmId');
-      localStorage.removeItem('selectedFieldId');
-      if (!window.location.pathname.startsWith('/login')) {
-        window.location.href = '/login?expired=1';
+      const token = localStorage.getItem('token');
+      const isDemo = token?.startsWith('demo-') || token === 'demo-mode';
+      if (!isDemo) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('agrimind_user');
+        localStorage.removeItem('cached_farms');
+        localStorage.removeItem('selectedFarmId');
+        localStorage.removeItem('selectedFieldId');
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login?expired=1';
+        }
       }
     }
     return Promise.reject(error);
@@ -209,6 +223,13 @@ export function FarmFieldProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Fallback to rich Demo Farm if empty and in demo mode or demo token
+    const isDemo = auth.isDemo();
+    if (fetchedFarms.length === 0 && isDemo) {
+      fetchedFarms = [DEMO_FARM];
+      setCached('cached_farms', fetchedFarms);
+    }
+
     const sortedFarms = fetchedFarms.sort((a, b) => a.name.localeCompare(b.name));
     setFarms(sortedFarms);
 
@@ -250,6 +271,13 @@ export function FarmFieldProvider({ children }: { children: React.ReactNode }) {
         console.warn('Failed to fetch fields from API, loading cache:', err);
         fetchedFields = getCached<Field[]>(`cached_fields_${farmId}`, []);
       }
+    }
+
+    // Fallback to rich Demo Fields if empty and in demo mode or for demo farm
+    const isDemo = auth.isDemo();
+    if (fetchedFields.length === 0 && (isDemo || farmId === DEMO_FARM.id)) {
+      fetchedFields = DEMO_FIELDS;
+      setCached(`cached_fields_${farmId}`, fetchedFields);
     }
 
     // Sort fields alphabetically
@@ -300,6 +328,22 @@ export function FarmFieldProvider({ children }: { children: React.ReactNode }) {
     const signal = abortControllerRef.current.signal;
 
     setIsLoadingPolledData(true);
+
+    const isDemo = auth.isDemo();
+    if (isDemo || selectedFieldId.startsWith('demo-')) {
+      setActiveCycle(DEMO_CYCLE);
+      setSensorData(DEMO_SENSORS);
+      setWeatherData(DEMO_WEATHER);
+      setIrrigationData(DEMO_IRRIGATION);
+      setAlertsData(DEMO_ALERTS);
+      setCached(`cached_active_cycle_${selectedFieldId}`, DEMO_CYCLE);
+      setCached(`cached_sensors_${selectedFieldId}`, DEMO_SENSORS);
+      setCached(`cached_weather_${selectedFieldId}`, DEMO_WEATHER);
+      setCached(`cached_irrigation_${selectedFieldId}`, DEMO_IRRIGATION);
+      setCached('cached_alerts', DEMO_ALERTS);
+      setIsLoadingPolledData(false);
+      return;
+    }
 
     if (typeof window !== 'undefined' && !navigator.onLine) {
       // Offline: load cached field info
