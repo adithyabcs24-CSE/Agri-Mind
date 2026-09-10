@@ -159,6 +159,30 @@ export default function LoginPage() {
       toast.error('Please enter your email and password');
       return;
     }
+
+    // ── Demo Login Bypass (works without backend) ──
+    if (loginEmail === 'demo@agrimind.ai' && loginPassword === 'demo1234') {
+      setLoginLoading(true);
+      const tid = toast.loading('Signing in with demo account...');
+      await new Promise(resolve => setTimeout(resolve, 800)); // simulate loading
+      const demoToken = 'demo-token-agrimind-' + Date.now();
+      const demoUser: AuthUser = {
+        id: 'demo-001',
+        name: 'Demo Farmer',
+        email: 'demo@agrimind.ai',
+        role: 'farmer',
+      };
+      api.setToken(demoToken);
+      auth.setAuth(demoToken, demoUser);
+      localStorage.removeItem('cached_farms');
+      localStorage.removeItem('selectedFarmId');
+      localStorage.removeItem('selectedFieldId');
+      toast.success('Welcome to AgriMind AI Demo! 🌿', { id: tid });
+      router.replace('/dashboard');
+      setLoginLoading(false);
+      return;
+    }
+
     setLoginLoading(true);
     const tid = toast.loading('Signing you into Neon Cloud DB...');
     try {
@@ -190,6 +214,7 @@ export default function LoginPage() {
       setLoginLoading(false);
     }
   };
+
 
   // ── Signup Submit ──
   const handleSignup = async (e: React.FormEvent) => {
@@ -374,8 +399,16 @@ export default function LoginPage() {
 
               <div className="login-demo-box">
                 <p className="login-demo-text">
-                  Demo: <span className="login-demo-cred">farmer@agrimind.ai</span> / <span className="login-demo-cred">Farmer@123</span>
+                  Demo: <span className="login-demo-cred">demo@agrimind.ai</span> / <span className="login-demo-cred">demo1234</span>
                 </p>
+                <button
+                  type="button"
+                  className="auth-switch-btn"
+                  style={{ marginTop: '8px', fontSize: '11px', padding: '6px 14px', background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.25)', color: '#4ade80' }}
+                  onClick={() => { setLoginEmail('demo@agrimind.ai'); setLoginPassword('demo1234'); }}
+                >
+                  ⚡ Fill Demo Credentials
+                </button>
               </div>
             </div>
           )}
